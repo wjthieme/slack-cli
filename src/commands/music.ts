@@ -67,8 +67,10 @@ export async function runMusic(): Promise<void> {
     if (nowPlaying.durationSec > 0 && nowPlaying.positionSec >= 0) {
       const remaining = Math.max(0, nowPlaying.durationSec - nowPlaying.positionSec);
       // Expire after track end + 2× poll interval so a late tick can still refresh or clear.
-      statusExpiration =
+      // Slack stores status_expiration at minute granularity (floors), so ceil to the next minute.
+      const rawExpiration =
         Math.floor(Date.now() / 1000) + Math.ceil(remaining) + STATUS_EXPIRY_MARGIN_SEC;
+      statusExpiration = Math.ceil(rawExpiration / 60) * 60;
     }
 
     const statusKey = `${statusText}|${MUSIC_STATUS_EMOJI}`;
