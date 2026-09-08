@@ -81,10 +81,9 @@ export async function setStatus(
     status_text: opts.statusText,
     status_text_canonical: "",
     ooo_message: "",
+    status_expiration:
+      opts.statusExpiration != null && opts.statusExpiration > 0 ? opts.statusExpiration : 0,
   };
-  if (opts.statusExpiration != null && opts.statusExpiration > 0) {
-    profile.status_expiration = opts.statusExpiration;
-  }
   await postMultipart(creds, "users.profile.set", {
     profile: JSON.stringify(profile),
     _x_reason: "CustomStatusModal:handle_save",

@@ -11,8 +11,6 @@ import { MUSIC_STATUS_EMOJI, STATUS_TEXT_MAX_LEN } from "../utility/config.js";
 import { debug } from "../utility/debug.js";
 
 const INTERVAL_MS = 5000;
-/** Extra seconds past track end before Slack clears the status (2× poll interval). */
-const STATUS_EXPIRY_MARGIN_SEC = (INTERVAL_MS / 1000) * 2;
 
 function truncateStatus(text: string, maxLen: number): string {
   const t = text.trim();
@@ -63,16 +61,6 @@ export async function runMusic(): Promise<void> {
       return;
     }
 
-    let statusExpiration: number | undefined;
-    if (nowPlaying.durationSec > 0 && nowPlaying.positionSec >= 0) {
-      const remaining = Math.max(0, nowPlaying.durationSec - nowPlaying.positionSec);
-      // Expire after track end + 2× poll interval so a late tick can still refresh or clear.
-      // Slack stores status_expiration at minute granularity (floors), so ceil to the next minute.
-      const rawExpiration =
-        Math.floor(Date.now() / 1000) + Math.ceil(remaining) + STATUS_EXPIRY_MARGIN_SEC;
-      statusExpiration = Math.ceil(rawExpiration / 60) * 60;
-    }
-
     const statusKey = `${statusText}|${MUSIC_STATUS_EMOJI}`;
     if (statusKey === lastStatusKey) {
       debug("skip: status unchanged");
@@ -83,7 +71,6 @@ export async function runMusic(): Promise<void> {
       await setStatus(creds, {
         statusText,
         statusEmoji: MUSIC_STATUS_EMOJI,
-        ...(statusExpiration != null ? { statusExpiration } : {}),
       });
       lastStatusKey = statusKey;
       console.log(`Slack status → ${MUSIC_STATUS_EMOJI} ${statusText}`);
